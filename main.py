@@ -40,10 +40,10 @@ message = b"Alice,Hi Alice!."
 key1, iv1, ciphertext1= sym_encrypt(message)
 rsa1 = pub_encrypt(iv1 + key1, 1)
 e1 = rsa1 + ciphertext1
-key2, iv2, ciphertext2= sym_encrypt()
+key2, iv2, ciphertext2= sym_encrypt(e1)
 rsa2 = pub_encrypt(iv2 + key2, 2)
 e2 = rsa2 + ciphertext2
-key3, iv3, ciphertext3= sym_encrypt(message)
+key3, iv3, ciphertext3= sym_encrypt(e2)
 rsa3 = pub_encrypt(iv3 + key3, 3)
 e3 = rsa3 + ciphertext3
 
