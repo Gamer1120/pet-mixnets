@@ -3,6 +3,8 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import padding as sympad
+
 import requests
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 import os
@@ -15,9 +17,12 @@ def sym_encrypt(message):
     #16 bytes = 128 bits
     key = os.urandom(16)
     iv = os.urandom(16)
+    padder = sympad.PKCS7(128).padder()
+    padded_data = padder.update(message)
+    padded_data += padder.finalize()
     cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=backend)
     encryptor = cipher.encryptor()
-    ciphertext = encryptor.update(message) + encryptor.finalize()
+    ciphertext = encryptor.update(padded_data) + encryptor.finalize()
     print("Encryption finished. key: %s iv: %s ciphertext %s" % (key, iv, ciphertext))
     return key, iv, ciphertext
 
@@ -38,7 +43,7 @@ def pub_encrypt(message, mixer_number):
         return ciphertext
 
 
-message = b"Alice,Hi Alice!."
+message = b"PETs,group 16."
 key3, iv3, ciphertext3= sym_encrypt(message)
 rsa3 = pub_encrypt(iv3 + key3, 3)
 e1 = rsa3 + ciphertext3
@@ -52,7 +57,7 @@ e3 = rsa1 + ciphertext1
 #print(requests.post("https://pets.ewi.utwente.nl:57523", str(len(e3)) + str(e3)))
 print("e3 is %s" % e3)
 host = "pets.ewi.utwente.nl"
-port = 54015
+port = 54666
 s = socket.socket()
 s.connect((host, port))
 s.send(struct.pack('>I', len(e3)) + e3)
