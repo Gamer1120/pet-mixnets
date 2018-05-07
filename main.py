@@ -12,8 +12,8 @@ import struct
 def sym_encrypt(message):
     print("Starting symmetric encryption on message %s" % message)
     backend = default_backend()
-    #32 bytes = 256 bits
-    key = os.urandom(32)
+    #16 bytes = 128 bits
+    key = os.urandom(16)
     iv = os.urandom(16)
     cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=backend)
     encryptor = cipher.encryptor()
@@ -30,8 +30,8 @@ def pub_encrypt(message, mixer_number):
         )
         ciphertext = public_key.encrypt(message,
                                   padding.OAEP(
-                                      mgf=padding.MGF1(algorithm=hashes.SHA256()),
-                                      algorithm=hashes.SHA256(),
+                                      mgf=padding.MGF1(algorithm=hashes.SHA1()),
+                                      algorithm=hashes.SHA1(),
                                       label=None
                                   ))
         print("Done encrypting. Ciphertext is %s"% ciphertext)
@@ -52,7 +52,7 @@ e3 = rsa1 + ciphertext1
 #print(requests.post("https://pets.ewi.utwente.nl:57523", str(len(e3)) + str(e3)))
 print("e3 is %s" % e3)
 host = "pets.ewi.utwente.nl"
-port = 54579
+port = 54015
 s = socket.socket()
 s.connect((host, port))
 s.send(struct.pack('>I', len(e3)) + e3)
