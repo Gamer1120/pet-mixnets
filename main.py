@@ -55,6 +55,6 @@ host = "pets.ewi.utwente.nl"
 port = 52575
 s = socket.socket()
 s.connect((host, port))
-s.send(e3)
+s.send(struct.pack('>I', len(e3)) + e3)
 data = s.recv(5)
 print(data)
