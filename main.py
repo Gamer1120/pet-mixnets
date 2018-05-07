@@ -6,6 +6,8 @@ from cryptography.hazmat.primitives import hashes
 import requests
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 import os
+import socket
+import struct
 
 def sym_encrypt(message):
     print("Starting symmetric encryption on message %s" % message)
@@ -37,14 +39,22 @@ def pub_encrypt(message, mixer_number):
 
 
 message = b"Alice,Hi Alice!."
-key1, iv1, ciphertext1= sym_encrypt(message)
-rsa1 = pub_encrypt(iv1 + key1, 1)
-e1 = rsa1 + ciphertext1
+key3, iv3, ciphertext3= sym_encrypt(message)
+rsa3 = pub_encrypt(iv3 + key3, 1)
+e1 = rsa3 + ciphertext3
 key2, iv2, ciphertext2= sym_encrypt(e1)
 rsa2 = pub_encrypt(iv2 + key2, 2)
 e2 = rsa2 + ciphertext2
-key3, iv3, ciphertext3= sym_encrypt(e2)
-rsa3 = pub_encrypt(iv3 + key3, 3)
-e3 = rsa3 + ciphertext3
+key1, iv1, ciphertext1= sym_encrypt(e2)
+rsa1 = pub_encrypt(iv1 + key1, 3)
+e3 = rsa1 + ciphertext1
 
-print(requests.post("https://pets.ewi.utwente.nl:57523", str(len(e3)) + str(e3)))
+#print(requests.post("https://pets.ewi.utwente.nl:57523", str(len(e3)) + str(e3)))
+print("e3 is %s" % e3)
+host = "pets.ewi.utwente.nl"
+port = 52575
+s = socket.socket()
+s.connect((host, port))
+s.send(e3)
+data = s.recv(5)
+print(data)
