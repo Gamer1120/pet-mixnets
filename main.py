@@ -10,6 +10,8 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 import os
 import socket
 import struct
+import time
+from time import gmtime, strftime
 
 def sym_encrypt(message):
     print("Starting symmetric encryption on message %s" % message)
@@ -42,24 +44,30 @@ def pub_encrypt(message, mixer_number):
         print("Done encrypting. Ciphertext is %s"% ciphertext)
         return ciphertext
 
-
-message = b"PETs,group 16."
-key3, iv3, ciphertext3= sym_encrypt(message)
-rsa3 = pub_encrypt(iv3 + key3, 3)
-e1 = rsa3 + ciphertext3
-key2, iv2, ciphertext2= sym_encrypt(e1)
-rsa2 = pub_encrypt(iv2 + key2, 2)
-e2 = rsa2 + ciphertext2
-key1, iv1, ciphertext1= sym_encrypt(e2)
-rsa1 = pub_encrypt(iv1 + key1, 1)
-e3 = rsa1 + ciphertext1
-
-#print(requests.post("https://pets.ewi.utwente.nl:57523", str(len(e3)) + str(e3)))
-print("e3 is %s" % e3)
-host = "pets.ewi.utwente.nl"
-port = 54666
 s = socket.socket()
+host = "pets.ewi.utwente.nl"
+port = 52604
 s.connect((host, port))
-s.send(struct.pack('>I', len(e3)) + e3)
-data = s.recv(5)
-print(data)
+i = range(1,42)
+for j in i:
+    messagearray = range(1,2)
+    for message in messagearray:
+        #    message = b"PETs,group 16."
+        message = str.encode('thresholdtest,' + str(message) + " " + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " " + str(j))
+        key3, iv3, ciphertext3= sym_encrypt(message)
+        rsa3 = pub_encrypt(iv3 + key3, 3)
+        e1 = rsa3 + ciphertext3
+        key2, iv2, ciphertext2= sym_encrypt(e1)
+        rsa2 = pub_encrypt(iv2 + key2, 2)
+        e2 = rsa2 + ciphertext2
+        key1, iv1, ciphertext1= sym_encrypt(e2)
+        rsa1 = pub_encrypt(iv1 + key1, 1)
+        e3 = rsa1 + ciphertext1
+
+        #print(requests.post("https://pets.ewi.utwente.nl:57523", str(len(e3)) + str(e3)))
+        print("e3 is %s" % e3)
+
+        s.send(struct.pack('>I', len(e3)) + e3)
+        time.sleep(0.1)
+        # data = s.recv(5)
+        # print(data)
