@@ -9,7 +9,7 @@ t3s = range(1,15)
 padding = 5
 
 # Actual Observed Output Sequence
-actual = [0,0,0,0,0,0,0,0,12,0,0,0,0,0,0,0,0,0,0,0,12,0,0,0,0,0,0,0,0,0,0,0,12];
+actual = [0,0,0,0,0,0,0,0,12,0,0,0,0,0,0,0,0,0,0,0,12,0,0,0,0,0,0,0,0,0,0,0,0,0,15];
 steps = len(actual)
  
 def evaluateMixAsSolution(m):
@@ -28,11 +28,12 @@ def evaluateStateReachable(ts, states, maxruns=1000):
 
 	# Create the mixnet
 	m = (len(ts), ts, [0]*len(ts))
-
+	c = 0
 	for i in range(0, maxruns):
 		out, m = dummy.sendMessage(m)	
+		c += 1
 		if m[2] == states:
-			return True
+			return True, c
 	return False
 
 def brute():
@@ -60,4 +61,28 @@ def brute():
 									if evaluateStateReachable(m[1], [r1,r2,r3]):
 										print ("\nFound solution: ", m)
 
+# m = (3,[3,11,4],[0,2,3])
+
+# i = 0
+# out = -1
+# while i != out:
+# 	i += 1
+# 	out, m = dummy.sendMessage(m)
+# print ("Returns to 0 state after ",i)
+# n = 135
+# outs, m = dummy.sendNMessages(m, n)
+# # acc = 0
+# for i in range(1,n):
+# 	if(outs[i] > 0):
+# 		print (i+1, outs[i])
+# 	acc += outs[i-1]
+	# print(outs[i-1], acc, i)
+# 	if outs[i-1] > 0 and i == acc:
+# 		print ("Returns to 0 state after", i)
+
 brute() # (3,[3,11,4],[0,2,3])
+# print (evaluateStateReachable([3,11,4],[0,0,0]))
+# for i in range(0,1000):
+# 	m = dummy.randomMixnet(3)
+# 	if evaluateStateReachable(m[1], [0]*3) == False:
+# 		print ("Zero-state not reachable for ", m)

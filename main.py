@@ -11,10 +11,11 @@ import os
 import socket
 import struct
 import time
+import poll
 from time import gmtime, strftime
 
 def sym_encrypt(message):
-    print("Starting symmetric encryption on message %s" % message)
+    # print("Starting symmetric encryption on message %s" % message)
     backend = default_backend()
     #16 bytes = 128 bits
     key = os.urandom(16)
@@ -25,11 +26,11 @@ def sym_encrypt(message):
     cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=backend)
     encryptor = cipher.encryptor()
     ciphertext = encryptor.update(padded_data) + encryptor.finalize()
-    print("Encryption finished. key: %s iv: %s ciphertext %s" % (key, iv, ciphertext))
+    # print("Encryption finished. key: %s iv: %s ciphertext %s" % (key, iv, ciphertext))
     return key, iv, ciphertext
 
 def pub_encrypt(message, mixer_number):
-    print("Encrypting the message %s for mixer %i (PUBKEY)" % (message, mixer_number))
+    # print("Encrypting the message %s for mixer %i (PUBKEY)" % (message, mixer_number))
     with open("public-key-mix-" + str(mixer_number) + ".pem", "rb") as key_file:
         public_key = serialization.load_pem_public_key(
             key_file.read(),
@@ -41,33 +42,54 @@ def pub_encrypt(message, mixer_number):
                                       algorithm=hashes.SHA1(),
                                       label=None
                                   ))
-        print("Done encrypting. Ciphertext is %s"% ciphertext)
+        # print("Done encrypting. Ciphertext is %s"% ciphertext)
         return ciphertext
 
+def full_encrypt(message):
+    key3, iv3, ciphertext3= sym_encrypt(message)
+    rsa3 = pub_encrypt(iv3 + key3, 3)
+    e1 = rsa3 + ciphertext3
+    key2, iv2, ciphertext2= sym_encrypt(e1)
+    rsa2 = pub_encrypt(iv2 + key2, 2)
+    e2 = rsa2 + ciphertext2
+    key1, iv1, ciphertext1= sym_encrypt(e2)
+    rsa1 = pub_encrypt(iv1 + key1, 1)
+    e3 = rsa1 + ciphertext1
+
+    return e3
+
+# Set up connection
 s = socket.socket()
 host = "pets.ewi.utwente.nl"
-port = 52604
+port = 54179      
 s.connect((host, port))
-i = range(1,42)
-for j in i:
-    messagearray = range(1,2)
-    for message in messagearray:
-        #    message = b"PETs,group 16."
-        message = str.encode('thresholdtest,' + str(message) + " " + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " " + str(j))
-        key3, iv3, ciphertext3= sym_encrypt(message)
-        rsa3 = pub_encrypt(iv3 + key3, 3)
-        e1 = rsa3 + ciphertext3
-        key2, iv2, ciphertext2= sym_encrypt(e1)
-        rsa2 = pub_encrypt(iv2 + key2, 2)
-        e2 = rsa2 + ciphertext2
-        key1, iv1, ciphertext1= sym_encrypt(e2)
-        rsa1 = pub_encrypt(iv1 + key1, 1)
-        e3 = rsa1 + ciphertext1
 
-        #print(requests.post("https://pets.ewi.utwente.nl:57523", str(len(e3)) + str(e3)))
-        print("e3 is %s" % e3)
+# Run test until n
+n = 140
 
-        s.send(struct.pack('>I', len(e3)) + e3)
-        time.sleep(0.1)
-        # data = s.recv(5)
-        # print(data)
+def countExits(n0):
+    n, exits = poll.extractRemainder(poll.exitLogURI, n0)
+    # Compensate for '(log is empty)' line
+    if n == 1 and exits[0] == "(":
+        return 0
+    return n, exits
+
+# Watch out for 'empty log' message
+siz, exits = countExits(0)
+
+for j in range(0, n):
+
+    # Create a message
+    m = str.encode('thresholdtest,' + str(j))
+    c = full_encrypt(m)
+
+    # Send the message
+    s.send(struct.pack('>I', len(c)) + c)
+    time.sleep(0.1)
+
+    # Check for output
+    siz, exits = countExits(siz)
+
+    if(len(exits) > 0):
+        print(j+1, "New exits: " + str(len(exits)))
+        # print(exits)
